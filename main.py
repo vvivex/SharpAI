@@ -25,10 +25,6 @@ DARK = dict(
     online="#3DDC84", offline="#FF6B6B", thinking="#FFC94D",
 )
 
-# ---------------------------------------------------------------------------
-# Markdown parsing
-# ---------------------------------------------------------------------------
-
 INLINE_PATTERN = re.compile(
     r'(?P<bolditalic>\*\*\*(?P<bi_text>.+?)\*\*\*)'
     r'|(?P<bold>\*\*(?P<b_text>.+?)\*\*)'
@@ -140,11 +136,6 @@ class MarkdownText(tk.Text):
         render_markdown(self, content)
         autosize_text_widget(self)
 
-
-# ---------------------------------------------------------------------------
-# Small animation helpers
-# ---------------------------------------------------------------------------
-
 def _hex_to_rgb(h):
     h = h.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
@@ -182,12 +173,7 @@ class Animator:
                 on_done()
 
         tick()
-
-
-# ---------------------------------------------------------------------------
-# Main app
-# ---------------------------------------------------------------------------
-
+        
 class SharpAIApp:
     def __init__(self, root):
         self.root = root
@@ -199,8 +185,8 @@ class SharpAIApp:
         self.dark_mode = False
         self.root.configure(bg=self.theme["bg"])
 
-        self.messages = []          # API-format history: [{role, content}]
-        self.bubbles = []           # UI metadata for redraw on theme change
+        self.messages = []
+        self.bubbles = []
         self.waiting = False
         self.cancel_event = None
         self.stream_buffer = ""
@@ -219,8 +205,6 @@ class SharpAIApp:
         )
         self.root.after(300, self.check_api)
         self.root.after(50, self._stream_flush_loop)
-
-    # ------------------------------------------------------------------ UI
 
     def build_ui(self):
         th = self.theme
@@ -342,8 +326,6 @@ class SharpAIApp:
         else:
             btn.config(bg=th["light"] if entering else th["bg"])
 
-    # ------------------------------------------------------------ scrolling
-
     def _on_frame_configure(self, e):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         if self.pinned_to_bottom:
@@ -388,8 +370,6 @@ class SharpAIApp:
         Animator(self.canvas).run(
             220, lambda t: self.canvas.yview_moveto(start + (end - start) * t)
         )
-
-    # ------------------------------------------------------------- bubbles
 
     def add_message(self, role, text, animate=True):
         th = self.theme
@@ -458,8 +438,6 @@ class SharpAIApp:
         words = sum(len(m["content"].split()) for m in self.messages)
         self.word_count_lbl.config(text=f"{len(self.messages)} msgs · {words} words")
 
-    # ------------------------------------------------------------- typing
-
     def show_typing_indicator(self):
         th = self.theme
         self.typing_row = tk.Frame(self.messages_frame, bg=th["bg"])
@@ -499,8 +477,6 @@ class SharpAIApp:
         self._typing_active = False
         if hasattr(self, "typing_row") and self.typing_row.winfo_exists():
             self.typing_row.destroy()
-
-    # ------------------------------------------------------------- sending
 
     def _on_input_change(self, event):
         pass  # reserved for live char-count / slash-command hooks
@@ -543,7 +519,6 @@ class SharpAIApp:
     def regenerate_last(self):
         if self.waiting or not self.messages:
             return
-        # drop trailing assistant reply, resend the last user turn
         while self.messages and self.messages[-1]["role"] == "assistant":
             self.messages.pop()
         if not self.messages:
@@ -554,8 +529,6 @@ class SharpAIApp:
             meta["row"].destroy()
         self.bubbles = self.bubbles[:-2]
         self._dispatch(last_user)
-
-    # -------------------------------------------------------- network / IO
 
     def request_ai(self, cancel_event):
         assistant_text = ""
@@ -581,7 +554,7 @@ class SharpAIApp:
                 token = data.get("token", "")
                 if token:
                     assistant_text += token
-                    # Just buffer; a single throttled loop flushes to the UI
+                    # Just buffer. a single throttled loop flushes to the UI
                     self.stream_buffer = assistant_text
                     self.stream_dirty = True
 
@@ -653,8 +626,6 @@ class SharpAIApp:
         self._set_dot_color(self.theme["offline"], pulse=False)
         self.send.config(text="SEND", command=self.send_message, state="normal")
 
-    # ------------------------------------------------------------- chat mgmt
-
     def clear_chat(self):
         if self.waiting:
             return
@@ -688,8 +659,6 @@ class SharpAIApp:
             messagebox.showinfo("Export", f"Saved to {os.path.basename(path)}")
         except OSError as exc:
             messagebox.showerror("Export failed", str(exc))
-
-    # --------------------------------------------------------------- theme
 
     def toggle_theme(self):
         self.dark_mode = not self.dark_mode
@@ -732,8 +701,6 @@ class SharpAIApp:
         for m in saved:
             self.add_message(m["role"], m["content"], animate=False)
         self.messages = saved
-
-    # --------------------------------------------------------------- status
 
     def _set_dot_color(self, color, pulse):
         self._dot_pulsing = pulse
